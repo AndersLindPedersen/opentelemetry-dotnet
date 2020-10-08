@@ -18,9 +18,9 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using OpenTelemetry;
-using OpenTelemetry.Logs;
 
-internal class MyExporter : BaseExporter<LogRecord>
+internal class MyExporter<T> : BaseExporter<T>
+    where T : class
 {
     private readonly string name;
 
@@ -29,24 +29,21 @@ internal class MyExporter : BaseExporter<LogRecord>
         this.name = name;
     }
 
-    public override ExportResult Export(in Batch<LogRecord> batch)
+    public override ExportResult Export(in Batch<T> batch)
     {
         // SuppressInstrumentationScope should be used to prevent exporter
         // code from generating telemetry and causing live-loop.
         using var scope = SuppressInstrumentationScope.Begin();
 
-        var sb = new StringBuilder();
         foreach (var record in batch)
         {
-            if (sb.Length > 0)
+            Console.WriteLine($"{record}");
+            foreach (var kvp in record.Travel())
             {
-                sb.Append(", ");
+                Console.WriteLine($"    {kvp.Key}: {kvp.Value}");
             }
-
-            sb.Append($"{record}");
         }
 
-        Console.WriteLine($"{this.name}.Export([{sb.ToString()}])");
         return ExportResult.Success;
     }
 
